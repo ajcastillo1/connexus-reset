@@ -24,11 +24,13 @@
   );
 
   // ✅ Obtener parámetros directamente desde la URL (search, no hash)
-  const params = new URLSearchParams(window.location.search);
+const fragment = window.location.hash.substring(1);
+const params = new URLSearchParams(fragment);
 
-  const access_token = params.get("access_token");
-  const refresh_token = params.get("refresh_token");
-  const type = params.get("type");
+const access_token = params.get("access_token");
+const refresh_token = params.get("refresh_token");
+const type = params.get("type");
+
 
   if (!access_token || !refresh_token || type !== "recovery") {
     document.getElementById("message").innerText = "❌ Token inválido o incompleto.";
