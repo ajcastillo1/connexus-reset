@@ -15,52 +15,50 @@
   <input type="password" id="password" placeholder="Nueva contraseña" />
   <button id="submit">Actualizar</button>
   <p id="message"></p>
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  const supabase = createClient(
+    "https://yrpvwyewzsvxqwkacbao.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  );
 
-    const supabase = createClient(
-      "https://yrpvwyewzsvxqwkacbao.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI"
-    );
+  // ✅ Obtener parámetros directamente desde la URL (search, no hash)
+  const params = new URLSearchParams(window.location.search);
 
-    // ✅ Extraer parámetros desde el hash (#access_token=...&...)
-    const fragment = window.location.hash.substring(1);
-    const params = new URLSearchParams(fragment);
+  const access_token = params.get("access_token");
+  const refresh_token = params.get("refresh_token");
+  const type = params.get("type");
 
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token");
-    const type = params.get("type");
+  if (!access_token || !refresh_token || type !== "recovery") {
+    document.getElementById("message").innerText = "❌ Token inválido o incompleto.";
+    document.getElementById("message").className = "error";
+    throw new Error("Faltan parámetros");
+  }
 
-    if (!access_token || !refresh_token || type !== "recovery") {
-      document.getElementById("message").innerText = "❌ Token inválido o incompleto.";
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token,
+    refresh_token
+  });
+
+  if (sessionError) {
+    document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + sessionError.message;
+    document.getElementById("message").className = "error";
+    throw sessionError;
+  }
+
+  document.getElementById("submit").addEventListener("click", async () => {
+    const password = document.getElementById("password").value;
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) {
+      document.getElementById("message").innerText = "❌ Error: " + error.message;
       document.getElementById("message").className = "error";
-      throw new Error("Faltan parámetros de sesión.");
+    } else {
+      document.getElementById("message").innerText = "✅ Contraseña cambiada correctamente.";
+      document.getElementById("message").className = "success";
     }
-
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token,
-      refresh_token
-    });
-
-    if (sessionError) {
-      document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + sessionError.message;
-      document.getElementById("message").className = "error";
-      throw sessionError;
-    }
-
-    document.getElementById("submit").addEventListener("click", async () => {
-      const password = document.getElementById("password").value;
-      const { error } = await supabase.auth.updateUser({ password });
-
-      if (error) {
-        document.getElementById("message").innerText = "❌ Error: " + error.message;
-        document.getElementById("message").className = "error";
-      } else {
-        document.getElementById("message").innerText = "✅ Contraseña cambiada correctamente.";
-        document.getElementById("message").className = "success";
-      }
-    });
-  </script>
+  });
+</script>
 </body>
 </html>
