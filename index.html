@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Restablecer contraseña</title>
+</head>
+<body>
+  <h2>Restablecer contraseña</h2>
+  <form id="reset-form">
+    <input type="password" id="new-password" placeholder="Nueva contraseña" required />
+    <button type="submit">Actualizar contraseña</button>
+  </form>
+  <p id="message"></p>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabase = createClient("https://yrpvwyewzsvxqwkacbao.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI");
+
+    const url = new URL(window.location.href);
+    const access_token = url.searchParams.get("access_token");
+    const type = url.searchParams.get("type");
+
+    if (type !== "recovery" || !access_token) {
+      document.getElementById("message").textContent = "Token inválido o ausente.";
+      throw new Error("Invalid token.");
+    }
+
+    // Restaurar sesión con el token
+    await supabase.auth.setSession({
+      access_token,
+      refresh_token: "", // No requerido para esta acción
+    });
+
+    document.getElementById("reset-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const password = document.getElementById("new-password").value;
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        document.getElementById("message").textContent = `Error: ${error.message}`;
+      } else {
+        document.getElementById("message").textContent = "✅ Contraseña actualizada. Ya puedes volver a la app.";
+      }
+    };
+  </script>
+</body>
+</html>
