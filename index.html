@@ -4,26 +4,10 @@
   <meta charset="UTF-8" />
   <title>Restablecer contraseña</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 2rem;
-      max-width: 400px;
-      margin: auto;
-    }
-    input, button {
-      display: block;
-      margin: 1rem 0;
-      width: 100%;
-      padding: 0.5rem;
-    }
-    .error {
-      color: red;
-      font-weight: bold;
-    }
-    .success {
-      color: green;
-      font-weight: bold;
-    }
+    body { font-family: sans-serif; padding: 2rem; max-width: 400px; margin: auto; }
+    input, button { display: block; margin: 1rem 0; width: 100%; padding: 0.5rem; }
+    .error { color: red; font-weight: bold; }
+    .success { color: green; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -37,10 +21,28 @@
 
     const supabase = createClient(
       "https://yrpvwyewzsvxqwkacbao.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI"
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+    // Extrae el token del hash
+    const hash = window.location.hash;
+    const accessToken = hash
+      .substring(1)
+      .split("&")
+      .find(part => part.startsWith("access_token="))
+      ?.split("=")[1];
+
+    if (!accessToken) {
+      document.getElementById("message").innerText = "❌ Token no encontrado.";
+      document.getElementById("message").className = "error";
+      throw new Error("Token no encontrado");
+    }
+
+    // Restaura la sesión
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: "" // No necesario para cambiar contraseña
+    });
 
     if (error) {
       document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + error.message;
@@ -48,6 +50,7 @@
       throw error;
     }
 
+    // Escuchar el envío
     document.getElementById("submit").addEventListener("click", async () => {
       const password = document.getElementById("password").value;
       const { error } = await supabase.auth.updateUser({ password });
