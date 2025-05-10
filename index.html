@@ -35,23 +35,12 @@
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    const supabase = createClient("https://yrpvwyewzsvxqwkacbao.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI");
+    const supabase = createClient(
+      "https://yrpvwyewzsvxqwkacbao.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI"
+    );
 
-    const url = new URL(window.location.href);
-const accessToken = url.searchParams.get("access_token");
-
-if (!accessToken) {
-  document.getElementById("message").innerHTML = "❌ Token no encontrado.";
-  document.getElementById("message").className = "error";
-  throw new Error("Token no encontrado");
-}
-
-
-    // Restaurar la sesión
-    const { data, error } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: "" // No necesario para actualizar la contraseña
-    });
+    const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
 
     if (error) {
       document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + error.message;
@@ -59,7 +48,6 @@ if (!accessToken) {
       throw error;
     }
 
-    // Esperar click en el botón
     document.getElementById("submit").addEventListener("click", async () => {
       const password = document.getElementById("password").value;
       const { error } = await supabase.auth.updateUser({ password });
