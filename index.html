@@ -24,24 +24,24 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI"
     );
 
-    // Extrae el token del hash
+    // ✅ Extrae el access_token desde el fragmento de la URL
     const hash = window.location.hash;
-    const accessToken = hash
+    const token = hash
       .substring(1)
       .split("&")
       .find(part => part.startsWith("access_token="))
       ?.split("=")[1];
 
-    if (!accessToken) {
+    if (!token) {
       document.getElementById("message").innerText = "❌ Token no encontrado.";
       document.getElementById("message").className = "error";
       throw new Error("Token no encontrado");
     }
 
-    // Restaura la sesión
+    // ✅ Restaura la sesión
     const { error } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: "" // No necesario para cambiar contraseña
+      access_token: token,
+      refresh_token: "" // No requerido para este uso
     });
 
     if (error) {
@@ -50,7 +50,7 @@
       throw error;
     }
 
-    // Escuchar el envío
+    // ✅ Maneja el formulario
     document.getElementById("submit").addEventListener("click", async () => {
       const password = document.getElementById("password").value;
       const { error } = await supabase.auth.updateUser({ password });
