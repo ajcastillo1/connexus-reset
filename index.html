@@ -24,7 +24,8 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     );
 
-    const fragment = window.location.hash.substring(1); // remove '#'
+    // ✅ Extraer parámetros desde el hash (#access_token=...&...)
+    const fragment = window.location.hash.substring(1);
     const params = new URLSearchParams(fragment);
 
     const access_token = params.get("access_token");
@@ -37,13 +38,15 @@
       throw new Error("Faltan parámetros de sesión.");
     }
 
-    // Restaura sesión con ambos tokens
-    const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token,
+      refresh_token
+    });
 
-    if (error) {
-      document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + error.message;
+    if (sessionError) {
+      document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + sessionError.message;
       document.getElementById("message").className = "error";
-      throw error;
+      throw sessionError;
     }
 
     document.getElementById("submit").addEventListener("click", async () => {
