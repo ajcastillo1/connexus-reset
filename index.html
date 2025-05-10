@@ -15,6 +15,7 @@
   <input type="password" id="password" placeholder="Nueva contraseña" />
   <button id="submit">Actualizar</button>
   <p id="message"></p>
+
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -23,14 +24,11 @@
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI"
   );
 
-  // ✅ Obtener parámetros directamente desde la URL (search, no hash)
-const fragment = window.location.hash.substring(1);
-const params = new URLSearchParams(fragment);
-
-const access_token = params.get("access_token");
-const refresh_token = params.get("refresh_token");
-const type = params.get("type");
-
+  const fragment = window.location.hash.substring(1);
+  const params = new URLSearchParams(fragment);
+  const access_token = params.get("access_token");
+  const refresh_token = params.get("refresh_token");
+  const type = params.get("type");
 
   if (!access_token || !refresh_token || type !== "recovery") {
     document.getElementById("message").innerText = "❌ Token inválido o incompleto.";
@@ -51,15 +49,40 @@ const type = params.get("type");
 
   document.getElementById("submit").addEventListener("click", async () => {
     const password = document.getElementById("password").value;
-    const { error } = await supabase.auth.updateUser({ password });
 
-    if (error) {
-      document.getElementById("message").innerText = "❌ Error: " + error.message;
+    // Actualizar Auth
+    const { error: authError } = await supabase.auth.updateUser({ password });
+
+    if (authError) {
+      document.getElementById("message").innerText = "❌ Error: " + authError.message;
       document.getElementById("message").className = "error";
-    } else {
-      document.getElementById("message").innerText = "✅ Contraseña cambiada correctamente.";
-      document.getElementById("message").className = "success";
+      return;
     }
+
+    // Obtener el UID del usuario autenticado
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      document.getElementById("message").innerText = "⚠️ Error obteniendo usuario actual.";
+      document.getElementById("message").className = "error";
+      return;
+    }
+
+    // Actualizar campo 'contrasennia' en la tabla usuario
+    const { error: dbError } = await supabase
+      .from("usuario")
+      .update({ contrasennia: password })
+      .eq("idunico", user.id);
+
+    if (dbError) {
+      document.getElementById("message").innerText =
+        "⚠️ Contraseña cambiada en Auth, pero falló en la base de datos: " + dbError.message;
+      document.getElementById("message").className = "error";
+      return;
+    }
+
+    document.getElementById("message").innerText = "✅ Contraseña cambiada correctamente en Auth y BD.";
+    document.getElementById("message").className = "success";
   });
 </script>
 </body>
