@@ -3,76 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <title>Restablecer contraseña</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      max-width: 400px;
+      margin: auto;
+    }
+    input, button {
+      display: block;
+      margin: 1rem 0;
+      width: 100%;
+      padding: 0.5rem;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Restablecer contraseña</h2>
+  <input type="password" id="password" placeholder="Nueva contraseña" />
+  <button id="submit">Actualizar</button>
+  <p id="message"></p>
+
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
     const supabase = createClient("https://yrpvwyewzsvxqwkacbao.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI");
 
-    const hash = window.location.hash; // <-- usa el hash
-    const token = hash
-      .substring(1)
+    const url = new URL(window.location.href);
+    const accessToken = url.hash
       .split("&")
-      .find((param) => param.startsWith("access_token="))
-      ?.split("=")[1];
+      .find(p => p.startsWith("access_token="))
+      ?.replace("access_token=", "");
 
-    if (!token) {
-      document.addEventListener("DOMContentLoaded", () => {
-        document.body.innerHTML = "<p style='color:red'>❌ Token de acceso no encontrado en la URL</p>";
-      });
+    if (!accessToken) {
+      document.getElementById("message").innerHTML = "❌ Token no encontrado en la URL.";
+      document.getElementById("message").className = "error";
       throw new Error("Token no encontrado");
     }
 
-    // Esperamos a que cargue el DOM
-    window.addEventListener("DOMContentLoaded", () => {
-      const status = document.getElementById("status");
-      const form = document.querySelector("form");
+    // Restaurar la sesión
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: "" // No necesario para actualizar la contraseña
+    });
 
-      // Establecer sesión
-      supabase.auth.setSession({
-        access_token: token,
-        refresh_token: "", // opcional si solo vas a actualizar la contraseña
-      }).then(({ error }) => {
-        if (error) {
-          status.textContent = "❌ Error al restaurar sesión: " + error.message;
-          status.style.color = "red";
-        } else {
-          form.onsubmit = async (e) => {
-            e.preventDefault();
-            const newPassword = form.password.value;
-            const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-            if (updateError) {
-              status.textContent = "❌ Error al actualizar contraseña: " + updateError.message;
-              status.style.color = "red";
-            } else {
-              status.textContent = "✅ Contraseña cambiada correctamente. Ya puedes volver a la app.";
-              status.style.color = "green";
-              form.reset();
-            }
-          };
-        }
-      });
+    if (error) {
+      document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + error.message;
+      document.getElementById("message").className = "error";
+      throw error;
+    }
+
+    // Esperar click en el botón
+    document.getElementById("submit").addEventListener("click", async () => {
+      const password = document.getElementById("password").value;
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        document.getElementById("message").innerText = "❌ Error: " + error.message;
+        document.getElementById("message").className = "error";
+      } else {
+        document.getElementById("message").innerText = "✅ Contraseña cambiada correctamente.";
+        document.getElementById("message").className = "success";
+      }
     });
   </script>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 2em;
-      max-width: 400px;
-      margin: auto;
-    }
-    input, button {
-      width: 100%;
-      padding: 0.8em;
-      margin-top: 1em;
-    }
-  </style>
-</head>
-<body>
-  <form>
-    <h2>Restablecer contraseña</h2>
-    <input type="password" name="password" placeholder="Nueva contraseña" required />
-    <button type="submit">Actualizar</button>
-    <p id="status"></p>
-  </form>
 </body>
 </html>
