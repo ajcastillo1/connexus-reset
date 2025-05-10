@@ -21,28 +21,24 @@
 
     const supabase = createClient(
       "https://yrpvwyewzsvxqwkacbao.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycHZ3eWV3enN2eHF3a2FjYmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTIxMDEsImV4cCI6MjA1OTk2ODEwMX0.llu6uixyc3-VyOziE2GwdjoWcW16Jnez65GYWzX8esI"
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     );
 
-    // ✅ Extrae el access_token desde el fragmento de la URL
-    const hash = window.location.hash;
-    const token = hash
-      .substring(1)
-      .split("&")
-      .find(part => part.startsWith("access_token="))
-      ?.split("=")[1];
+    const fragment = window.location.hash.substring(1); // remove '#'
+    const params = new URLSearchParams(fragment);
 
-    if (!token) {
-      document.getElementById("message").innerText = "❌ Token no encontrado.";
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    const type = params.get("type");
+
+    if (!access_token || !refresh_token || type !== "recovery") {
+      document.getElementById("message").innerText = "❌ Token inválido o incompleto.";
       document.getElementById("message").className = "error";
-      throw new Error("Token no encontrado");
+      throw new Error("Faltan parámetros de sesión.");
     }
 
-    // ✅ Restaura la sesión
-    const { error } = await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: "" // No requerido para este uso
-    });
+    // Restaura sesión con ambos tokens
+    const { error } = await supabase.auth.setSession({ access_token, refresh_token });
 
     if (error) {
       document.getElementById("message").innerText = "❌ Error al restaurar sesión: " + error.message;
@@ -50,7 +46,6 @@
       throw error;
     }
 
-    // ✅ Maneja el formulario
     document.getElementById("submit").addEventListener("click", async () => {
       const password = document.getElementById("password").value;
       const { error } = await supabase.auth.updateUser({ password });
